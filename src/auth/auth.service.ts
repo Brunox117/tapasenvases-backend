@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -30,28 +31,71 @@ export class AuthService {
       const { password: _, ...userWithoutPassword } = user;
       return userWithoutPassword;
     } catch (error) {
+      this.logger.error(`[CreateUser] Error: ${error}`);
       this.handleErrors(error);
     }
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async findAll() {
+    try {
+      const users = await this.userRepository.find();
+      const usersWithoutPassword = users.map((user) => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      return usersWithoutPassword;
+    } catch (error) {
+      this.logger.error(`[FindAll] Error: ${error}`);
+      this.handleErrors(error);
+    }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} auth`;
+  async findOne(id: string) {
+    try {
+      const user = await this.userRepository.findOneBy({ id });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    } catch (error) {
+      this.logger.error(`[FindOne] Error: ${error}`);
+      this.handleErrors(error);
+    }
   }
 
-  update(id: string, updateAuthDto: UpdateUserDto) {
-    return `This action updates a #${id} auth`;
+  async update(id: string, updateAuthDto: UpdateUserDto) {
+    try {
+      const user = await this.userRepository.findOneBy({ id });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      if (updateAuthDto.password) {
+        updateAuthDto.password = bcrypt.hashSync(updateAuthDto.password, 10);
+      }
+      await this.userRepository.update(id, updateAuthDto);
+      return this.userRepository.findOneBy({ id });
+    } catch (error) {
+      this.logger.error(`[Update] Error: ${error}`);
+      this.handleErrors(error);
+    }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} auth`;
+  async remove(id: string) {
+    try {
+      const user = await this.userRepository.findOneBy({ id });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      await this.userRepository.delete(id);
+      return { message: 'User deleted successfully' };
+    } catch (error) {
+      this.logger.error(`[Remove] Error: ${error}`);
+      this.handleErrors(error);
+    }
   }
 
   private handleErrors(error: any): never {
-    this.logger.error(error);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (error.code === '23505') {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
