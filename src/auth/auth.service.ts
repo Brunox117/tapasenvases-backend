@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -12,6 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -92,6 +94,29 @@ export class AuthService {
     } catch (error) {
       this.logger.error(`[Remove] Error: ${error}`);
       this.handleErrors(error);
+    }
+  }
+
+  async login(loginDto: LoginDto) {
+    try {
+      const { email, password } = loginDto;
+      const user = await this.userRepository.findOneBy({ email });
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const { password: _, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    } catch (error) {
+      //With this we avoid logging unauthorized errors
+      //which are normal in this case
+      if (!(error instanceof UnauthorizedException)) {
+        this.logger.error(`[Login] Error: ${error}`);
+        this.handleErrors(error);
+      }
     }
   }
 
