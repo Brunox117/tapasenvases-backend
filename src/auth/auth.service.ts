@@ -14,6 +14,8 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { LoginDto } from './dto/login.dto';
+import { JwtPayload } from './interfaces/jwtpayload';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +23,7 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
   async create(createUserDto: CreateUserDto) {
     try {
@@ -31,7 +34,10 @@ export class AuthService {
       });
       await this.userRepository.save(user);
       const { password: _, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+      return {
+        user: userWithoutPassword,
+        token: this.getJwtToken({ id: user.id }),
+      };
     } catch (error) {
       this.logger.error(`[CreateUser] Error: ${error}`);
       this.handleErrors(error);
@@ -109,7 +115,10 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
       const { password: _, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+      return {
+        user: userWithoutPassword,
+        token: this.getJwtToken({ id: user.id }),
+      };
     } catch (error) {
       //With this we avoid logging unauthorized errors
       //which are normal in this case
@@ -118,6 +127,11 @@ export class AuthService {
         this.handleErrors(error);
       }
     }
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 
   private handleErrors(error: any): never {
