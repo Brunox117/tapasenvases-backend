@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { CapsService } from './caps.service';
 import { CreateCapDto } from './dto/create-cap.dto';
 import { UpdateCapDto } from './dto/update-cap.dto';
