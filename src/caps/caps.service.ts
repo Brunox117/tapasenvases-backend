@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateCapDto } from './dto/create-cap.dto';
 import { UpdateCapDto } from './dto/update-cap.dto';
@@ -34,16 +35,35 @@ export class CapsService {
     return `This action returns all caps`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} cap`;
+  async findOne(id: string) {
+    try {
+      const cap = await this.capRepository.findOneBy({ id });
+      if (!cap) {
+        throw new NotFoundException(`Cap with id ${id} not found`);
+      }
+      return cap;
+    } catch (error) {
+      this.logger.error(`[FindoOne] Error ${error}`);
+      this.handleErrors(error);
+    }
   }
 
-  update(id: number, updateCapDto: UpdateCapDto) {
+  update(id: string, updateCapDto: UpdateCapDto) {
     return `This action updates a #${id} cap`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} cap`;
+  async remove(id: string) {
+    try {
+      const cap = await this.findOne(id);
+      if (!cap) {
+        throw new NotFoundException(`Cap with id ${id} not found`);
+      }
+      await this.capRepository.remove(cap);
+      return true;
+    } catch (error) {
+      this.logger.error(`[FindoOne] Error ${error}`);
+      this.handleErrors(error);
+    }
   }
 
   private handleErrors(error: any): never {

@@ -27,16 +27,16 @@ export class CapsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.capsService.findOne(+id);
+    return this.capsService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCapDto: UpdateCapDto) {
-    return this.capsService.update(+id, updateCapDto);
+    return this.capsService.update(id, updateCapDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.capsService.remove(+id);
+    return this.capsService.remove(id);
   }
 }
